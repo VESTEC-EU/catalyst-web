@@ -1,0 +1,24 @@
+{
+  "name": "catalyst-web",
+  "version": "0.0.1",
+  "description": "Remote rendering for Catalyst",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode development",
+    "build:debug": "webpack --display-modules",
+    "build:release": "webpack --mode production",
+    "start": "webpack-dev-server"
+  },
+  "author": "Kitware SAS, VESTEC, Adrien Boucaud",
+  "license": "ISC",
+  "dependencies": {
+    "hammerjs": "^2.0.8",
+    "paraviewweb": "^3.2.12",
+    "wslink": "^0.1.14"
+  },
+  "devDependencies": {
+    "kw-web-suite": "^10.0.0",
+    "monologue.js": "^0.3.5",
+    "normalize.css": "^8.0.1"
+  }
+}
