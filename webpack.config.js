@@ -8,7 +8,7 @@ const plugins = [
   }),
 ];
 
-const entry = path.join(__dirname, "./src/index.js");
+const entry = path.join(__dirname, "./src/example/index.js");
 const outputPath = path.join(__dirname, "./dist");
 const styles = path.resolve("./node_modules/paraviewweb/style");
 

@@ -9,6 +9,8 @@ import LiveVisualizationHandler from "catalyst-web/src/RemoteCatalystClient/Live
 import SizeHelper from "paraviewweb/src/Common/Misc/SizeHelper";
 import ParaViewWebClient from "paraviewweb/src/IO/WebSocket/ParaViewWebClient";
 
+import configuration from "./configuration";
+
 document.body.style.padding = "0";
 document.body.style.margin = "0";
 
@@ -20,9 +22,7 @@ divRenderer.style.width = "100vw";
 divRenderer.style.height = "100vh";
 divRenderer.style.overflow = "hidden";
 
-const config = { sessionURL: "ws://localhost:1234/ws" }; // TODO: should be configurable
-
-const smartConnect = SmartConnect.newInstance({ config });
+const smartConnect = SmartConnect.newInstance({ config: configuration });
 
 let intervalId = null;
 const clearIntervalCb = () => {
@@ -38,27 +38,59 @@ smartConnect.onConnectionReady((connection) => {
   );
   const renderer = new RemoteRenderer(pvwClient);
   renderer.setContainer(divRenderer);
-  renderer.onImageReady(() => {
-    console.log("We are good");
-  });
-  console.log("client", pvwClient);
+
   window.renderer = renderer;
   SizeHelper.onSizeChange(() => {
     renderer.resize();
   });
   SizeHelper.startListening();
 
-  // Connect catalyst
-  pvwClient.LiveVisualizationHandler.connect('localhost', 22222).then((result = null) => {
-    intervalId = setInterval(pvwClient.LiveVisualizationHandler.monitor, 50);
-    pvwClient.LiveVisualizationHandler.onConnected(([{ source }]) => {
-      console.log("Catalyst connected", source);
+  // Set live callbacks
+  pvwClient.LiveVisualizationHandler.onConnected(() => {
+    console.log("Catalyst connected");
+
+    pvwClient.LiveVisualizationHandler.extract(configuration.sourceName).then(
+      ({ id }) => {
+        extracted = true;
+      }
+    );
+  });
+
+  pvwClient.LiveVisualizationHandler.onDisconnected(() => {
+    console.log("Catalyst disconnected");
+    clearIntervalCb();
+  });
+
+  let shown = false;
+  let extracted = false;
+
+  pvwClient.LiveVisualizationHandler.onUpdate(() => {
+    if (extracted && !shown) {
+      shown = true;
+      pvwClient.LiveVisualizationHandler.show(configuration.sourceName).then(
+        ({ id }) => {
+          pvwClient.ViewPort.resetCamera();
+          renderer.render();
+        }
+      );
+    } else {
       renderer.render();
+    }
+  });
+
+  renderer.onImageReady(() => {});
+
+  const monitor = () => {
+    return pvwClient.LiveVisualizationHandler.monitor().then(() => {
+      monitor();
     });
-    pvwClient.LiveVisualizationHandler.onDisconnected(() => {
-      console.log("Catalyst disconnected");
-      clearIntervalCb();
-    });
+  };
+
+  pvwClient.LiveVisualizationHandler.connect(
+    configuration.catalystURL,
+    configuration.catalystPort
+  ).then(() => {
+    monitor();
   });
 });
 
